@@ -1,35 +1,48 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   get_next_line_utils.c                              :+:      :+:    :+:   */
+/*   get_next_line_utils_bonus.c                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: szapata- <szapata-@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/25 12:54:01 by szapata-          #+#    #+#             */
-/*   Updated: 2023/12/28 13:48:29 by szapata-         ###   ########.fr       */
+/*   Updated: 2024/01/02 15:20:46 by szapata-         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "get_next_line.h"
+#include "get_next_line_bonus.h"
 
-char	*ft_strjoin(char *s1, char *s2)
+t_list	*ft_lstnew(t_list *prev, int fd)
+{
+	t_list	*new_node;
+
+	new_node = malloc(sizeof(t_list));
+	if (!new_node)
+		return (new_node);
+	new_node->fd = fd;
+	new_node->len = 0;
+	new_node->buffer = 0;
+	new_node->next = NULL;
+	new_node->prev = prev;
+	return (new_node);
+}
+
+char	*ft_strjoin(char *s1, char *s2, size_t len)
 {
 	char	*s;
 	char	*tmp;
 	int		s1_len;
-	int		s2_len;
 	int		i;
 
 	s1_len = ft_strlen(s1);
-	s2_len = ft_strlen(s2);
-	s = (char *)malloc(s1_len + s2_len + 1);
+	s = (char *)malloc(s1_len + len + 1);
 	if (!s)
 		return (s);
 	tmp = s;
 	i = 0;
 	while (s1_len--)
 		*s++ = s1[i++];
-	while (s2_len--)
+	while (len--)
 		*s++ = *s2++;
 	*s = 0;
 	if (s1)
@@ -44,8 +57,11 @@ size_t	ft_strlen(char *str)
 	if (!str)
 		return (0);
 	i = 0;
-	while (str[i])
+	while (*str)
+	{
 		i++;
+		str++;
+	}
 	return (i);
 }
 

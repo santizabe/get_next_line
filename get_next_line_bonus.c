@@ -1,17 +1,18 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   get_next_line.c                                    :+:      :+:    :+:   */
+/*   get_next_line_bonus.c                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: szapata- <szapata-@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/21 19:28:49 by szapata-          #+#    #+#             */
-/*   Updated: 2023/12/28 12:34:21 by szapata-         ###   ########.fr       */
+/*   Updated: 2024/01/02 22:20:59 by szapata-         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "get_next_line.h"
+#include "get_next_line_bonus.h"
 #include <stdio.h>
+#include <fcntl.h>
 
 int	check_buffer(char **buffer, char **line, size_t *len)
 {
@@ -27,7 +28,7 @@ int	check_buffer(char **buffer, char **line, size_t *len)
 	while (buffer[0][*len])
 		if (buffer[0][(*len)++] == '\n')
 			break ;
-	set_new_line(line, &buffer[0][len_tmp], (*len) - len_tmp);
+	*line = ft_strjoin(*line, &buffer[0][len_tmp], (*len) - len_tmp);
 	if ((*len == buff_len && *len < BUFFER_SIZE) || !*line)
 	{
 		free(*buffer);
@@ -40,60 +41,78 @@ int	check_buffer(char **buffer, char **line, size_t *len)
 	return (1);
 }
 
-int	init_buffer(char **buffer, int fd)
+int	init_buffer(t_list *head, t_list **list, int fd)
 {
-	unsigned int	i;
+	char	*buffer;
+	int		i;
 
-	*buffer = (char *)malloc(BUFFER_SIZE + 1);
-	if (!*buffer)
-		return (0);
-	i = 0;
-	while (i <= BUFFER_SIZE)
-		buffer[0][i++] = 0;
-	if (read(fd, *buffer, BUFFER_SIZE) < 1)
+	buffer = (char *)malloc(BUFFER_SIZE + 1);
+	if (!buffer)
 	{
-		free(*buffer);
-		*buffer = 0;
+		*list = head;
 		return (0);
 	}
+	i = 0;
+	while (i <= BUFFER_SIZE)
+		buffer[i++] = 0;
+	if (read(fd, buffer, BUFFER_SIZE) < 1)
+	{
+		if ((*list)->next)
+			(*list)->next->prev = (*list)->prev;
+		if ((*list)->prev)
+			(*list)->prev->next = (*list)->next;
+		set_list(list, NULL, fd, head);
+		free(buffer);
+		return (0);
+	}
+	(*list)->buffer = buffer;
 	return (1);
 }
 
-void	set_new_line(char **line, char *buffer, size_t len)
+void	set_list(t_list **list, char **line, int fd, t_list *head)
 {
-	char	*new_line;
-	char	*tmp;
+	t_list	*tmp;
 
-	new_line = (char *)malloc(len + 1);
-	if (!new_line)
+	if (head)
 	{
-		if (*line)
-			free(*line);
+		tmp = *list;
+		if (!(*list)->prev)
+			*list = (*list)->next;
+		else
+			*list = head;
+		free(tmp);
 		return ;
 	}
-	new_line[len] = 0;
-	tmp = new_line;
-	while (len--)
-		new_line[len] = buffer[len];
-	*line = ft_strjoin(*line, tmp);
-	free(tmp);
+	*line = 0;
+	while ((*list)->fd != fd)
+	{
+		if ((*list)->next)
+			*list = (*list)->next;
+		else
+			(*list)->next = ft_lstnew(*list, fd);
+	}
 }
 
 char	*get_next_line(int fd)
 {
-	static char		*buffer;
-	char			*line;
-	static size_t	len;
+	static t_list		*list;
+	t_list				*head;
+	char				*line;
 
 	if (fd < 0 || BUFFER_SIZE < 1)
 		return (NULL);
-	if (!buffer)
-		if (init_buffer(&buffer, fd) < 1)
+	if (!list)
+		list = ft_lstnew(NULL, fd);
+	head = list;
+	set_list(&list, &line, fd, NULL);
+	if (!(list->buffer))
+		if (init_buffer(head, &list, fd) < 1)
 			return (NULL);
-	line = 0;
-	while (check_buffer(&buffer, &line, &len))
-		if (check_read(read(fd, buffer, BUFFER_SIZE), &buffer, &line, &len))
+	while (check_buffer(&(list->buffer), &line, &(list->len)))
+		if (check_read(read(fd, list->buffer, BUFFER_SIZE)
+				, &(list->buffer), &line, &(list->len)))
 			break ;
+	list = head;
 	return (line);
 }
 
@@ -101,8 +120,16 @@ char	*get_next_line(int fd)
 // {
 // 	char	*line;
 // 	int		fd;
+// 	int		fd2;
 
 // 	fd = open("hello.txt", O_RDONLY);
+// 	fd2 = open("bye.txt", O_RDONLY);
+// 	line = get_next_line(fd);
+// 	printf("%s", line);
+// 	free(line);
+// 	line = get_next_line(fd2);
+// 	printf("%s", line);
+// 	free(line);
 // 	line = get_next_line(fd);
 // 	printf("%s", line);
 // 	free(line);
